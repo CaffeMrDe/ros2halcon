@@ -17,7 +17,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include <asr_halcon_bridge/halcon_pointcloud.h>
 #include <boost/make_shared.hpp>
-
+#include "HalconC.h"
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/PointField.h>
 
@@ -251,6 +251,96 @@ namespace halcon_bridge {
         }
 
         return ptr;
+    }
+
+    void toHalconCopy(const sensor_msgs::PointCloud2 &source, HalconCpp::HObject &XYZImage)
+    {
+        int offset_x, offset_y, offset_z, offset_x_normal, offset_y_normal, offset_z_normal, offset_curvature;
+        offset_x = offset_y = offset_z = offset_x_normal = offset_y_normal = offset_z_normal = offset_curvature = 0;
+        int count_x_normal, count_y_normal, count_z_normal, count_curvature;
+        count_x_normal = count_y_normal = count_z_normal = count_curvature = 0;
+
+        for (unsigned int i = 0; i < source.fields.size(); i++) {
+            sensor_msgs::PointField field = source.fields[i];
+            if (field.name == "x") {
+                offset_x = field.offset;
+            }
+            if (field.name == "y") {
+                offset_y = field.offset;
+            }
+            if (field.name == "z") {
+                offset_z = field.offset;
+            }
+            if (field.name == "normal_x") {
+                offset_x_normal = field.offset;
+                count_x_normal = field.count;
+            }
+            if (field.name == "normal_y") {
+                offset_y_normal = field.offset;
+                count_y_normal = field.count;
+            }
+            if (field.name == "normal_z") {
+                offset_z_normal = field.offset;
+                count_z_normal = field.count;
+            }
+            if (field.name == "curvature") {
+                offset_curvature = field.offset;
+                count_curvature = field.count;
+            }
+
+        }
+
+        HalconCpp::HObject  X,Y, Z;
+        int height = source.height;
+        int width = source.width;
+        int size = height* width;
+        float* x_coords = new float[size];
+        float* y_coords = new float[size];
+        float* z_coords = new float[size];
+
+        int i = 0;
+        std::cout << width<<" "<<height<<std::endl;
+        HalconCpp::GenImageConst(&X,"real",width, height );
+        HalconCpp::GenImageConst(&Y,"real",width, height );
+        HalconCpp::GenImageConst(&Z,"real",width, height );
+        for (int row=0; row<height; row++)
+        {
+          for (int col=0; col<width; col++, i++)
+          {
+            float tempdataX = *(float*)&source.data[(i * source.point_step) + offset_x];
+            float tempdataY = *(float*)&source.data[(i * source.point_step) + offset_y];
+            float tempdataZ = *(float*)&source.data[(i * source.point_step) + offset_z];
+            HalconCpp::HTuple VALX = static_cast<double>(tempdataX);
+            HalconCpp::HTuple VALY = static_cast<double>(tempdataY);
+            HalconCpp::HTuple VALZ = static_cast<double>(tempdataZ);
+//            std::cout << VALX.D()<<" ";
+            HalconCpp::SetGrayval(X, row, col,VALX);
+            HalconCpp::SetGrayval(Y, row, col,VALY);
+            HalconCpp::SetGrayval(Z, row, col,VALZ);
+          }
+        }
+
+        try{
+
+//            HalconCpp::HTuple OBJ;
+            HalconCpp::Compose3(X, Y ,Z ,&XYZImage);
+            HalconCpp::WriteImage(XYZImage, "tiff", 0, "/home/de/ws_vision/build/demo_test.tiff");
+//            HalconCpp::XyzToObjectModel3d(X, Y, Z,&OBJ );
+//            HalconCpp::WriteObjectModel3d(OBJ, "ply","/home/de/ws_vision/build/demo_test.ply", HalconCpp::HTuple(),HalconCpp::HTuple() );
+        }catch(HalconCpp::HTupleAccessException e){
+            std::cerr << e.ErrorMessage()<<std::endl;
+            return ;
+        }catch(HalconCpp::HOperatorException e){
+             std::cerr << e.ErrorMessage()<<std::endl;
+            return ;
+        }
+
+
+
+
+        free(x_coords);
+        free(y_coords);
+        free(z_coords);
     }
 
 }
