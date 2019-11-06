@@ -253,7 +253,7 @@ namespace halcon_bridge {
         return ptr;
     }
 
-    void toHalconCopy(const sensor_msgs::PointCloud2 &source, HalconCpp::HObject &XYZImage)
+    bool toHalconCopy(const sensor_msgs::PointCloud2 &source, HalconCpp::HObject &XYZImage)
     {
         int offset_x, offset_y, offset_z, offset_x_normal, offset_y_normal, offset_z_normal, offset_curvature;
         offset_x = offset_y = offset_z = offset_x_normal = offset_y_normal = offset_z_normal = offset_curvature = 0;
@@ -287,7 +287,6 @@ namespace halcon_bridge {
                 offset_curvature = field.offset;
                 count_curvature = field.count;
             }
-
         }
 
         HalconCpp::HObject  X,Y, Z;
@@ -313,7 +312,6 @@ namespace halcon_bridge {
             HalconCpp::HTuple VALX = static_cast<double>(tempdataX);
             HalconCpp::HTuple VALY = static_cast<double>(tempdataY);
             HalconCpp::HTuple VALZ = static_cast<double>(tempdataZ);
-//            std::cout << VALX.D()<<" ";
             HalconCpp::SetGrayval(X, row, col,VALX);
             HalconCpp::SetGrayval(Y, row, col,VALY);
             HalconCpp::SetGrayval(Z, row, col,VALZ);
@@ -322,21 +320,15 @@ namespace halcon_bridge {
 
         try{
 
-//            HalconCpp::HTuple OBJ;
             HalconCpp::Compose3(X, Y ,Z ,&XYZImage);
             HalconCpp::WriteImage(XYZImage, "tiff", 0, "/home/de/ws_vision/build/demo_test.tiff");
-//            HalconCpp::XyzToObjectModel3d(X, Y, Z,&OBJ );
-//            HalconCpp::WriteObjectModel3d(OBJ, "ply","/home/de/ws_vision/build/demo_test.ply", HalconCpp::HTuple(),HalconCpp::HTuple() );
         }catch(HalconCpp::HTupleAccessException e){
             std::cerr << e.ErrorMessage()<<std::endl;
-            return ;
+            return false;
         }catch(HalconCpp::HOperatorException e){
              std::cerr << e.ErrorMessage()<<std::endl;
-            return ;
+            return false;
         }
-
-
-
 
         free(x_coords);
         free(y_coords);

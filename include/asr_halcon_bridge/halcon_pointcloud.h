@@ -77,7 +77,7 @@ namespace halcon_bridge {
     HalconPointcloudPtr toHalconCopy(const sensor_msgs::PointCloud2& source);
 
 
-    void toHalconCopy(const sensor_msgs::PointCloud2& source, HalconCpp::HObject &XYZImage);
+    bool toHalconCopy(const sensor_msgs::PointCloud2& source, HalconCpp::HObject &XYZImage);
 
 }
 
